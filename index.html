@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f4c81"><title>Maaş Modülü</title>
+<style>
+:root{--bg:#f3f5f8;--cd:#fff;--tx:#18222d;--mu:#6a7885;--pr:#0f4c81;--ok:#0b7a4b;--bd:#dde3ea;--ac:#e8f0f9}
+@media(prefers-color-scheme:dark){:root{--bg:#10151b;--cd:#1a222b;--tx:#e6ecf2;--mu:#90a0b0;--pr:#5aa2e6;--ok:#4cc38a;--bd:#2c3744;--ac:#22303f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px system-ui,sans-serif;padding:env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom))}
+header{background:var(--pr);color:#fff;padding:12px 16px;font-weight:700}
+main{padding:10px;max-width:640px;margin:auto}
+.c{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+h3{margin:0 0 8px;font-size:14px;color:var(--pr);text-transform:uppercase;letter-spacing:.3px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;font-size:11px;color:var(--mu)}
+input,select{width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:15px;margin-top:2px}
+.r{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--bd);font-size:14px}
+.r b{font-variant-numeric:tabular-nums}.r.t{font-weight:700;border:0;background:var(--ac);padding:8px;border-radius:8px;margin-top:4px}
+.big{font-size:22px;color:var(--ok);font-weight:800;text-align:center;padding:6px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--cd);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;color:var(--mu);padding:12px 2px;font-size:12px;font-weight:600}
+nav button.on{color:var(--pr);border-top:3px solid var(--pr)}
+.b{background:var(--pr);color:#fff;border:0;border-radius:8px;padding:10px 14px;font-weight:600;width:100%;margin-top:6px}
+.b.s{background:var(--bd);color:var(--tx)}small{color:var(--mu);font-size:12px}
+details summary{cursor:pointer;font-weight:600;color:var(--pr);padding:4px 0}
+</style></head><body>
+<header>Maaş Hesaplama Modülü <small style="color:#cfe0f3;font-weight:400">· Sürekli İşçi</small></header>
+<main id="m"></main>
+<nav id="nav"></nav>
+<script>
+/*CALC*/
+const R2=(x)=>Math.round((x+Number.EPSILON)*100)/100, NF=v=>(+v||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const DEF={
+P:{asgari:33030,asgariIst:5615.1,vd:[190000,400000,1500000,5300000],vr:[15,20,27,35],base:1497.91,iyi:50,zam:[24,11,11.19,13.76],
+ sy:3207.42,yemek:189.53,isg:16.47,sofor:16.47,hzBaz:15,hzYil:7,ek:9039.08,giyim:2810.19,yolNet:80,yolDilim:27,eng:[0,3000,7000,12000],
+ sgk:14,issiz:1,damga:0.759,bes:3},
+M:{ay:10,gun:16,fmG:0,fmN:0,arefe:0,tatil:1,gece:88,yemGun:26,tek:0,tekFark:0,sofor:0,isg:0,amb:0,ted:0,eng:0,sure:446807.34,eksik:5865,eskiD:0},
+F:{sure:0,rows:[]},
+Y:{yil:2026,aylar:Array(12).fill(0),yillar:{2021:5940.76,2022:9945.73,2023:28532.51,2024:50060.9,2025:75004.09}}};
+const AYLAR=['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK'];
+const mult=(P,from=0)=>P.zam.slice(from).reduce((a,z)=>a*(1+z/100),1);
+function bilgi(P){ // BİLGİLER sayfası
+ const z=P.zam,daily=z.slice(1).reduce((a,x)=>a*(1+x/100),(P.base*(1+z[0]/100))+P.iyi);
+ const k={15:.71491,20:.67241,27:.61291}[P.yolDilim]||.61291, asgNet=P.asgari*.85, gvIst=asgNet*.15;
+ return{daily,sy:P.sy*mult(P),yemek:P.yemek*mult(P),isg:P.isg*mult(P),sofor:P.sofor*mult(P),amb:P.sofor*2*mult(P),
+  hz:P.hzBaz*mult(P)*P.hzYil,ek:P.ek*mult(P,1),giyim:P.giyim*mult(P,2),yol:P.yolNet/k,yemIst:R2(P.asgari/30*.2365),
+  gvIst,dvIst:P.asgari*P.damga/100,asgNet,fark:P.asgariIst>1?P.asgariIst-gvIst:0};
+}
+function vergi(P,x){let t=0,lo=0;for(let i=0;i<4;i++){const hi=i<3?P.vd[i]:Infinity;if(x>lo)t+=(Math.min(x,hi)-lo)*P.vr[i]/100;lo=hi;}return t;}
+function calcMaas(P,M){
+ const B=bilgi(P),d=B.daily,gunAy=[31,28,31,30,31,30,31,31,30,31,30,31][M.ay-1],o={};
+ o.taban=d*gunAy;
+ o.fm=((d/7.5)*.7+d/7.5)*M.fmG+((d/7.5)*.75+d/7.5)*M.fmN;
+ o.tatil=R2(d*2/7.5)*M.arefe+d*M.tatil*2;
+ o.gece=R2(d/7.5*.35)*M.gece;
+ o.yol=M.gun*B.yol; o.yemek=M.yemGun*B.yemek; o.yemIst=M.yemGun*B.yemIst;
+ o.hp=R2(d*.16)*gunAy; o.tek=M.tekFark; o.hpSil=o.tek<1?0:o.hp;
+ o.sy=B.sy; o.hz=B.hz;
+ o.meslek=M.sofor*B.sofor+M.isg*B.isg+M.amb*B.amb; o.fark14=M.tek;
+ o.tediye=M.ted*d; o.ikr=(M.ay==2||M.ay==8?30:0)*d; o.giyim=M.ay==8?B.giyim:0; o.ekOd=M.ay==4?B.ek:0;
+ o.brut=o.taban+o.fm+o.tatil+o.gece+o.yol+o.yemek+o.hp+o.sy+o.meslek+o.fark14+o.tediye+o.ikr+o.giyim+o.ekOd+o.tek-o.hpSil+o.hz;
+ o.sendika=d; o.esas=o.brut-o.yemek;
+ o.sgk=o.esas*P.sgk/100; o.isz=o.esas*P.issiz/100;
+ o.matrah=o.esas-(o.sgk+o.isz)-o.sendika-M.eng;
+ o.toplam=M.sure+o.matrah;
+ o.gv=vergi(P,o.toplam)-vergi(P,M.sure)-B.gvIst;
+ o.dv=(o.esas-P.asgari)*P.damga/100;
+ o.net=o.matrah-o.gv-o.dv+M.eng+o.yemek+B.fark+M.eksik;
+ o.bes=Math.floor(o.esas*P.bes/100); o.netBes=o.net-o.bes;
+ o.istisnasiz=o.net-(B.gvIst+B.fark)-B.dvIst;
+ o.B=B; return o;
+}
+function rowCalc(P,r){
+ const e=+r.eski||0,y=+r.yeni||0,f=y-e,g=+r.gun||0,k=r.ayGun>0?g/r.ayGun:1,o={};
+ const fm=(v)=>((v/7.5)*.6+v/7.5)*r.fmG+((v/7.5)*.75+v/7.5)*r.fmN;
+ o.ucret=f*g; o.fm=fm(y)-fm(e); o.tatil=r.tatil*f*2;
+ o.arefe=(R2(y*2/7.5)-R2(e*2/7.5))*r.arefe; o.hz=(r.hzY-r.hzE)*k; o.yol=(r.yolY-r.yolE)*k;
+ o.gece=(R2(y/7.5*.35)-R2(e/7.5*.35))*r.geceS; o.hp=R2(y*.16)*g-R2(e*r.hpO/100)*g;
+ o.sy=(r.spY-r.spE)*k; o.giy=r.giyY-r.giyE; o.ikr=f*r.ikG; o.ted=f*r.tedG; o.ek=r.ekY-r.ekE;
+ o.yem=(r.yemY-r.yemE)*r.yemG;
+ o.bn=o.ucret+o.fm+o.tatil+o.arefe+o.hz+o.yol+o.gece+o.hp+o.sy+o.giy+o.ikr+o.ted+o.ek;
+ o.brut=o.bn+o.yem; o.sgk=o.bn*P.sgk/100; o.isz=o.bn*P.issiz/100; o.sen=f*k;
+ o.matrah=o.bn-o.sgk-o.isz-o.sen; return o;
+}
+function calcFark(P,F){let cum=+F.sure||0;return F.rows.map(r=>{const o=rowCalc(P,r);o.onceki=cum;cum+=o.matrah;o.top=cum;
+ o.gv=vergi(P,o.top)-vergi(P,o.onceki);o.dv=o.bn*P.damga/100;o.net=o.matrah-o.gv-o.dv+o.yem;return o;});}
+/*END*/
+let ST=JSON.parse(localStorage.getItem('maas_v2')||'null')||JSON.parse(JSON.stringify(DEF)),tab='maas';
+try{ST=Object.assign(JSON.parse(JSON.stringify(DEF)),ST)}catch(e){}
+const save=()=>{try{localStorage.setItem('maas_v2',JSON.stringify(ST))}catch(e){}};
+const gp=(p)=>p.split('.').reduce((a,k)=>a?.[k],ST);
+function sp(p,v){const ks=p.split('.');let a=ST;for(let i=0;i<ks.length-1;i++)a=a[ks[i]];a[ks.at(-1)]=v;}
+const I=(p,l,t)=>`<label>${l}<input ${t=='text'?'':'type=number inputmode=decimal step=any'} data-p="${p}" value="${gp(p)??''}"></label>`;
+const Rw=(l,v,c)=>`<div class="r ${c||''}"><span>${l}</span><b>${NF(v)}</b></div>`;
+function viewMaas(){const M=ST.M;return`<div class=c><h3>Dönem</h3><div class=g>
+<label>Maaş ayı<select data-p="M.ay">${AYLAR.map((a,i)=>`<option value=${i+1} ${M.ay==i+1?'selected':''}>${a}</option>`).join('')}</select></label>${I('M.gun','Çalışılan gün')}
+${I('M.yemGun','Yemek günü')}${I('M.sure','Süregelen yıllık vergi matrahı')}</div>
+<small>İşçi önce çalışır sonra alır: Şubat'ta alınan maaş Ocak maaşıdır → Ocak = 1.</small></div>
+<div class=c><h3>Ek gelirler</h3><div class=g>${I('M.fmG','F. mesai gündüz saat')}${I('M.fmN','F. mesai gece saat')}${I('M.tatil','Tatil çalışma günü')}${I('M.arefe','Arefe 13-16 saat')}${I('M.gece','Toplam gece saati')}${I('M.tekFark','Tekniker/Teknik farkı (brüt)')}</div></div>
+<div class=c><h3>Diğer</h3><div class=g>${I('M.sofor','Meslek taz. şoför gün')}${I('M.isg','İş sağlığı gün')}${I('M.amb','Ambulans gün')}${I('M.tek','14 günlük fark ücreti')}${I('M.ted','Tediye gün sayısı')}
+<label>Engelli indirimi<select data-p="M.eng">${[[0,'Yok'],[3000,'3. derece (3.000)'],[7000,'2. derece (7.000)'],[12000,'1. derece (12.000)']].map(a=>`<option value=${a[0]} ${M.eng==a[0]?'selected':''}>${a[1]}</option>`).join('')}</select></label>
+${I('M.eksik','Eksik/ilave vergi istisna')}</div><small>İkramiye (Şubat/Ağustos 30 gün), giyim (Ağustos), ek ödeme (Nisan) otomatik gelir.</small></div>
+<div id=res></div>`;}
+function resMaas(){const o=calcMaas(ST.P,ST.M),el=document.getElementById('res');if(!el)return;
+ el.innerHTML=`<div class=c><h3>Brüt kalemler</h3>${Rw('Taban ('+o.B.daily.toFixed(2)+' × gün)',o.taban)}${Rw('Fazla mesai',o.fm)}${Rw('Tatil/arefe çalışması',o.tatil)}${Rw('Gece çalışması',o.gece)}${Rw('Yol yardımı',o.yol)}${Rw('Yemek yardımı',o.yemek)}${Rw('Hizmet primi (%16)',o.hp-o.hpSil+o.tek)}${Rw('Sosyal yardım',o.sy)}${Rw('Hizmet zammı',o.hz)}${Rw('Meslek/İSG/ambulans',o.meslek)}${Rw('14 günlük fark',o.fark14)}${Rw('Tediye',o.tediye)}${Rw('İkramiye',o.ikr)}${Rw('Giyim',o.giyim)}${Rw('Ek ödeme',o.ekOd)}${Rw('TOPLAM BRÜT',o.brut,'t')}</div>
+<div class=c><h3>Kesintiler</h3>${Rw('Vergiye esas brüt',o.esas)}${Rw('SGK işçi payı',o.sgk)}${Rw('SGK işsizlik',o.isz)}${Rw('Sendika aidatı',o.sendika)}${Rw('Aylık vergi matrahı',o.matrah)}${Rw('Toplam yıllık matrah',o.toplam)}${Rw('Gelir vergisi',o.gv)}${Rw('Damga vergisi',o.dv)}${Rw('Asgari ücret vergi istisnası',o.B.gvIst+o.B.fark)}</div>
+<div class=c><div class=big>${NF(o.net)} ₺<br><small>BES hariç net maaş</small></div>${Rw('BES kesintisi (%'+ST.P.bes+')',o.bes)}${Rw('BES dahil net',o.netBes,'t')}${Rw('Vergi istisnası hariç maaş',o.istisnasiz)}
+<button class=b onclick="kaydet()">Net maaşı yıllık ortalamaya kaydet</button><button class="b s" onclick="sureAktar()">Yeni matrahı süregelene aktar</button></div>`;
+ window._o=o;}
+function kaydet(){ST.Y.aylar[ST.M.ay-1]=R2(window._o.net);save();alert(AYLAR[ST.M.ay-1]+' için kaydedildi.');}
+function sureAktar(){ST.M.sure=R2(window._o.toplam);save();show();}
+const FF=[['etiket','Dönem / açıklama','text'],['eski','Aldığım yevmiye'],['yeni','Alacağım yevmiye'],['gun','Gün sayısı'],['ayGun','Ay günü (kıst için, tam ay boş)'],['fmG','F.mesai gündüz saat'],['fmN','F.mesai gece saat'],['tatil','Tatil çalışma günü'],['arefe','Arefe saat'],['geceS','Gece zammı saat'],['hpO','Eski hizmet primi %'],['hzE','Eski hizmet zammı'],['hzY','Yeni hizmet zammı'],['yolE','Eski yol'],['yolY','Yeni yol'],['spE','Eski sosyal yardım'],['spY','Yeni sosyal yardım'],['giyE','Eski giyim'],['giyY','Yeni giyim'],['ikG','İkramiye gün'],['tedG','Tediye gün'],['ekE','Eski ek ödeme'],['ekY','Yeni ek ödeme'],['yemE','Eski yemek günlük'],['yemY','Yeni yemek günlük'],['yemG','Yemek gün']];
+const newRow=()=>Object.fromEntries(FF.map(f=>[f[0],f[0]=='etiket'?'':f[0]=='hpO'?16:0]));
+function viewFark(){return`<div class=c><h3>Geriye dönük / 14 günlük fark</h3><small>Her satır bir dönem. Eski ve yeni değerleri girin, brüt fark, kesintiler ve net fark otomatik hesaplanır.</small>${I('F.sure','Süregelen yıllık vergi matrahı')}</div>
+${ST.F.rows.map((r,i)=>`<div class=c><h3>Satır ${i+1}</h3><div class=g>${FF.map(f=>I(`F.rows.${i}.${f[0]}`,f[1],f[2])).join('')}</div><button class="b s" onclick="ST.F.rows.splice(${i},1);save();show()">Satırı sil</button></div>`).join('')}
+<button class=b onclick="ST.F.rows.push(newRow());save();show()">+ Satır ekle</button><div id=res></div>`;}
+function resFark(){const el=document.getElementById('res');if(!el)return;const rs=calcFark(ST.P,ST.F),S=k=>rs.reduce((a,r)=>a+r[k],0);
+ el.innerHTML=rs.length?`<div class=c><h3>Satır sonuçları</h3>${rs.map((r,i)=>Rw((ST.F.rows[i].etiket||'Satır '+(i+1))+' — net',r.net)).join('')}</div>
+<div class=c><h3>Genel tablo</h3>${Rw('Toplam brüt fark',S('brut'))}${Rw('Yemek hariç fark',S('bn'))}${Rw('SGK işçi payı',S('sgk'))}${Rw('SGK işsizlik',S('isz'))}${Rw('Sendika kesintisi',S('sen'))}${Rw('Gelir vergisi',S('gv'))}${Rw('Damga vergisi',S('dv'))}${Rw('Toplam net ödenecek fark',S('net'),'t')}</div>`:'';}
+function viewOrt(){const Y=ST.Y;return`<div class=c><h3>${Y.yil} aylık net maaşlar</h3><div class=g>${AYLAR.map((a,i)=>I('Y.aylar.'+i,a)).join('')}</div></div><div id=res></div>
+<div class=c><h3>Yıllara göre maaş ortalaması</h3><div class=g>${Object.keys(Y.yillar).map(y=>I('Y.yillar.'+y,y)).join('')}</div></div>`;}
+function resOrt(){const el=document.getElementById('res');if(!el)return;const a=ST.Y.aylar;let s=0,n=0,h='';
+ a.forEach((v,i)=>{if(v>0){s+=v;n++;h+=Rw(AYLAR[i]+' sonrası ortalama',s/n);}});
+ el.innerHTML=`<div class=c><h3>Ortalama</h3>${h}${Rw('Yıllık toplam alınan',a.reduce((x,y)=>x+y,0),'t')}${n?Rw('Güncel ortalama',s/n,'t'):''}</div>`;}
+function viewBil(){const P=ST.P,B=bilgi(P);return`<div class=c><h3>Asgari ücret / vergi</h3><div class=g>${I('P.asgari','Brüt asgari ücret')}${I('P.asgariIst','Vergiye giren asgari ücret sonrası istisna')}${P.vd.map((v,i)=>I('P.vd.'+i,'Dilim '+(i+1)+' üst sınır')).join('')}${P.vr.map((v,i)=>I('P.vr.'+i,'Dilim '+(i+1)+' oran %')).join('')}${I('P.sgk','SGK işçi %')}${I('P.issiz','İşsizlik %')}${I('P.damga','Damga %')}${I('P.bes','BES %')}</div></div>
+<div class=c><h3>TİS taban ve zamlar</h3><div class=g>${I('P.base','Önceki taban yevmiye')}${I('P.iyi','İyileştirme (+)')}${P.zam.map((v,i)=>I('P.zam.'+i,(i+1)+'. dönem zam %')).join('')}</div>
+<button class="b s" onclick="ST.P.zam.push(0);save();show()">+ Dönem ekle</button><button class="b s" onclick="ST.P.zam.length>1&&ST.P.zam.pop();save();show()">Son dönemi sil</button></div>
+<div class=c><h3>Sözleşme başlangıç tutarları</h3><div class=g>${I('P.sy','Sosyal yardım')}${I('P.yemek','Yemek (günlük)')}${I('P.isg','İş sağlığı & güvenliği')}${I('P.sofor','Meslek taz. şoför')}${I('P.hzBaz','Hizmet zammı (yıl başına)')}${I('P.hzYil','Hizmet yılı')}${I('P.ek','Ek ödeme')}${I('P.giyim','Giyim yardımı')}${I('P.yolNet','Net yol')}${I('P.yolDilim','Yol vergi dilimi (15/20/27)')}</div></div>
+<div class=c><h3>Hesaplanan güncel dönem</h3>${Rw('Günlük ücret',B.daily)}${Rw('Sosyal yardım',B.sy)}${Rw('Yemek',B.yemek)}${Rw('Yol (brüt)',B.yol)}${Rw('Hizmet zammı',B.hz)}${Rw('Ek ödeme',B.ek)}${Rw('Giyim',B.giyim)}${Rw('Yemek istisnası',B.yemIst)}${Rw('Asgari gelir vergisi istisnası',B.gvIst)}${Rw('Asgari damga istisnası',B.dvIst)}</div>
+<div class=c><details><summary>AGİ tablosu (2021)</summary>${[['Bekâr',268.31],['Evli, eşi çalışmayan, çocuksuz',321.97],['Eşi çalışmayan, 1 çocuk',362.22],['Eşi çalışmayan, 2 çocuk',402.47],['Eşi çalışmayan, 3 çocuk',456.12],['Eşi çalışan, çocuksuz',268.31],['Eşi çalışan, 1 çocuk',308.55],['Eşi çalışan, 2 çocuk',348.8],['Eşi çalışan, 3 çocuk',402.47],['Eşi çalışan, 4 çocuk',429.3],['Eşi çalışan, 5 çocuk',456.13]].map(a=>Rw(a[0],a[1])).join('')}</details></div>
+<button class="b s" onclick="if(confirm('Tüm veriler sıfırlansın mı?')){localStorage.removeItem('maas_v2');location.reload()}">Verileri sıfırla</button>`;}
+const TABS=[['maas','Maaş',viewMaas,resMaas],['fark','Fark',viewFark,resFark],['ort','Ortalama',viewOrt,resOrt],['bil','Bilgiler',viewBil,()=>{}]];
+function show(){const t=TABS.find(x=>x[0]==tab);document.getElementById('m').innerHTML=t[2]();t[3]();
+ document.getElementById('nav').innerHTML=TABS.map(x=>`<button class="${x[0]==tab?'on':''}" onclick="tab='${x[0]}';show();scrollTo(0,0)">${x[1]}</button>`).join('');}
+document.addEventListener('input',e=>{const p=e.target.dataset.p;if(!p)return;const v=e.target.tagName=='SELECT'||e.target.type=='number'?(e.target.value===''?0:+e.target.value):e.target.value;sp(p,v);save();
+ const t=TABS.find(x=>x[0]==tab);if(tab=='bil')return;t[3]();});
+show();
+</script></body></html>
