@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f4c81"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><title>Maaş Hesaplama</title>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b3a66"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><title>Maaş Hesaplama</title>
 <style>
 :root{--bg:#eef2f7;--cd:#fff;--tx:#14202e;--mu:#6b7b8c;--pr:#0f4c81;--bd:#e1e8f0;--ok:#0b7a4b;--rd:#c62828;--ac:#f1f6fb;--in:#fffbe6}
 @media(prefers-color-scheme:dark){:root{--bg:#0f151c;--cd:#18212b;--tx:#e8eef4;--mu:#93a3b3;--pr:#5aa2e6;--bd:#2a3644;--ok:#4cc38a;--rd:#ff7b72;--ac:#1f2b38;--in:#2b2a1a}}
@@ -29,6 +29,8 @@ details{border:1px solid var(--bd);border-radius:12px;margin:8px 0;background:va
 .homehd{background:linear-gradient(135deg,#0b3a66,#1a6fb5);color:#fff;border-radius:18px;padding:22px 18px;margin-bottom:14px}.homehd h2{margin:0;font-size:24px}.homehd p{margin:4px 0 0;opacity:.85}
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}.tile{background:var(--cd);border:1px solid var(--bd);border-radius:18px;padding:16px 12px;text-decoration:none;color:var(--tx);display:flex;flex-direction:column;gap:4px;box-shadow:0 2px 6px #0001;min-height:150px}.tile.w{grid-column:span 2;min-height:0;flex-direction:row;align-items:center;gap:14px}
 .tile .ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}.tile b{font-size:16px;margin-top:6px}.tile.w b{margin:0}.tile small{color:var(--mu);font-size:12.5px}.tile small span{color:var(--ok);font-weight:700}
+.warn{border-radius:10px;padding:10px 12px;margin:6px 0;font-size:13px;line-height:1.4}.warn.a{background:#fff3cd;color:#664d03;border:1px solid #ffda6a}.warn.i{background:var(--ac);color:var(--mu);border:1px solid var(--bd)}.warn button{margin-top:6px;border:0;border-radius:8px;padding:7px 12px;font:inherit;font-weight:700;background:#664d03;color:#fff}.warn.i button{background:var(--pr)}
+.bigc{display:block;text-decoration:none;color:#fff;background:linear-gradient(135deg,#0b3a66,#1a6fb5 70%,#2a8fd8);border-radius:22px;padding:20px 18px;box-shadow:0 8px 20px #0b3a6655}.bigc small{opacity:.9;font-size:14px}.bigc .bn{font-size:38px;font-weight:800;letter-spacing:-1px;margin:2px 0}.bigc .bs{opacity:.92;font-size:13px}.bigc .cta{display:block;text-align:center;background:#fff;color:#0b3a66;font-weight:800;border-radius:14px;padding:13px;margin-top:14px;font-size:16px}.tile{min-height:120px}
 .chips button{flex:none;color:#fff;font:inherit;font-size:13px;font-weight:600;background:#ffffff26;border:0;border-radius:16px;padding:5px 12px}input[type=checkbox]{width:22px;height:22px}
 </style></head><body>
 <div class=top><button id=bk onclick="history.back()" hidden>‹</button><h1 id=tt>Maaş Modülü</h1></div>
@@ -41,7 +43,8 @@ const SN=DB.S.map(s=>s.n),SH=Object.fromEntries(DB.S.map(s=>[s.n,s]));
 const ALIAS={M:SN[0],S14:SN[1],B:SN[2],A:SN[3],Y:SN[4],G:SN[5]},AYLAR=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 // ---- formül motoru (Excel'deki IF, AND, ROUND, ROUNDDOWN, SUM) ----
 let cache={};const AUTOF="=ASGARIISTISNA('VERİ GİRİŞİ VE MAAŞ MODÜLÜ'!I8)",KF5='BİLGİLER!F5';
-const rawOf=(s,a)=>{const k=s+'!'+a;if(k===KF5&&ST.auto!==false)return AUTOF;return k in ST.ov?ST.ov[k]:SH[s].cells[a]};
+const KD45=SN[0]+'!D45',curAy=()=>Math.round(num(rawOf(SN[0],'I8')));
+const rawOf=(s,a)=>{const k=s+'!'+a;if(k===KF5&&ST.auto!==false)return AUTOF;if(k===KD45&&(ST.d45m??10)!==curAy())return 0;return k in ST.ov?ST.ov[k]:SH[s].cells[a]};
 const num=x=>x==null?0:x===true?1:x===false?0:typeof x=='string'?(x.trim()===''?0:Number(x.replace(',','.'))):x;
 function val(s,a){const k=s+'!'+a;if(k in cache)return cache[k];let r=rawOf(s,a),v;
  if(typeof r=='string'&&r[0]=='='){cache[k]=null;try{v=parse(r,s)()}catch(e){v=NaN}}else v=r===undefined?null:r;return cache[k]=v}
@@ -103,7 +106,7 @@ function build(){const M=ALIAS.M,B=ALIAS.B,Y=ALIAS.Y,A=ALIAS.A;
  const bl=(a,l,o)=>o=='in'?row(l,'',inp(B,a,{u:'₺'})):kv(l,B,a);
  const s1=sec('s1',1,'Bu ayın bilgileri','Maaşını hesaplamak istediğin ayı seç ve kutuları doldur. Sarı kutular yazılabilir.',
   row('Maaş ayı','Hesaplanan ay',sel(M,'I8','ay'))+inRow('Çalışılan gün','Ay içinde çalıştığın gün sayısı',M,'D8','gün')+inRow('Yemek günü','Yemek yardımı alınan gün',M,'D18','gün')+
-  inRow('Süregelen yıllık vergi matrahı','Önceki ayın bordrosundaki toplam yıllık matrah (ocakta 0)',M,'D41','₺')+row('Engelli derecesi','Yoksa "Yok" seç',sel(M,'D44','eng'))+inRow('Eksik / ilave vergi istisnası','Varsa tutarı yaz, yoksa boş bırak',M,'D45','₺'));
+  inRow('Süregelen yıllık vergi matrahı','Önceki ayın bordrosundaki toplam yıllık matrah (ocakta 0)',M,'D41','₺')+row('Engelli derecesi','Yoksa "Yok" seç',sel(M,'D44','eng'))+inRow('Eksik / ilave vergi istisnası','Yalnızca yazdığın ay için geçerli, sonraki aya taşınmaz',M,'D45','₺')+'<div id=wr class=warn hidden></div>');
  const s2=sec('s2',2,'Ek çalışmalar','Bu ay yaptığın ek çalışmaları yaz. Karşılığı yeşil renkte görünür.',
   inRow('Fazla mesai – gündüz','Toplam saat',M,'D11','saat','E11')+inRow('Fazla mesai – gece','Toplam saat',M,'F11','saat','G11')+inRow('Arefe günü (13-16 arası)','Çalıştığın saat',M,'D13','saat','E13')+inRow('Resmi tatil çalışması','Çalıştığın gün',M,'F13','gün','G13')+inRow('Gece çalışması','Ay içindeki toplam gece saati',M,'G14','saat','I14'));
  const s3=sec('s3',3,'Diğer ödemeler','Varsa doldur. İkramiye (Şubat, Ağustos), giyim (Ağustos), ek ödeme (Nisan) ilgili ayda otomatik eklenir.',
@@ -128,12 +131,12 @@ function build(){const M=ALIAS.M,B=ALIAS.B,Y=ALIAS.Y,A=ALIAS.A;
   grp('Güncel dönem değerleri (otomatik)',[['F40','Günlük ücret'],['G46','Sosyal yardım'],['G51','Yol (brüt)'],['G53','Hizmet zammı'],['G55','Yemek (günlük)'],['G56','İş sağlığı ve güvenliği'],['G57','Şoför tazminatı'],['G58','Ambulans tazminatı'],['G63','Ek ödeme'],['G64','Giyim'],['B69','İkramiye brüt'],['F69','İkramiye net %15'],['G69','İkramiye net %20'],['H69','İkramiye net %27'],['B73','Tediye brüt'],['F73','Tediye net %15'],['G73','Tediye net %20'],['H73','Tediye net %27']].map(x=>bl(x[0],x[1])).join(''))+
   grp('Tekniker / teknisyen net farkı → brüt',row('Tekniker net farkı','',inp(B,'B27',{u:'₺'}))+row('Teknisyen net farkı','',inp(B,'C27',{u:'₺'}))+[28,29,30].map(r=>kv('%'+({28:15,29:20,30:27})[r]+' dilimde brüt (tekniker / teknisyen)',B,'B'+r)+kv('',B,'C'+r)).join(''))+
   grp('AGİ tablosu',[4,5,6,7,8,9,10,11,12,13,14].map(r=>row(String(SH[A].cells['A'+r]),'',inp(A,'B'+r,{u:'₺'}))).join(''))+
-  `<button class="b s" onclick="if(confirm('Tüm girdiğin bilgiler silinip ilk haline dönsün mü?')){ST.ov={};ST.gvn=0;save();build()}">Verileri ilk haline döndür</button>`);
+  `<button class="b s" onclick="if(confirm('Tüm girdiğin bilgiler silinip ilk haline dönsün mü?')){ST.ov={};ST.gvn=0;ST.d45m=undefined;save();build()}">Verileri ilk haline döndür</button>`);
  const hero=`<div class=hero><div class=t><span id=hm>Maaş</span><span id=hg></span></div><div class=n><span data-o="M|D46"></span></div><div class=s>Net maaş (BES hariç) · Brüt <b data-o="M|I36"></b></div><div class=chips><button onclick="go('s1')">Bu Ay</button><button onclick="go('s2')">Ek Çalışma</button><button onclick="go('s3')">Diğer</button><button onclick="go('s4')">Sonuç</button></div></div>`;
  const g14=sec('s6a',null,'14 günlük fark','Zam 14 gün geçerliyse kullan. Bilgileri gir, sonuç anında hesaplanır.',`<div class=net><small>Brüt fark</small><b data-o="${ALIAS.S14}|BP3"></b></div>`+fieldsHTML(ALIAS.S14,3,2,68,[])+`<button class=b onclick="ST.ov[ALIAS.M+'!I29']=Math.round(num(val(ALIAS.S14,'BP3'))*100)/100;save();fill();alert('Maaş hesabındaki 14 günlük fark alanına yazıldı.')">Maaş hesabına aktar</button>`);
  const geri=sec('s6b',null,'Geriye dönük fark','Her dönemi aç, bilgileri gir. En altta genel tablo ve toplam net fark var.',gCards());
  const T=(h,c,ic,t,sm,w)=>`<a class="tile${w?' w':''}" href="#${h}"><span class=ic style="background:${c}22">${ic}</span><span><b>${t}</b><br><small>${sm}</small></span></a>`;
- const home=`<div class=homehd><h2>Maaş Modülü</h2><p>Sürekli işçi maaş hesaplama</p></div><div class=tiles>${T('maas','#0b7a4b','🧮','Maaş Hesapla','Net maaş: <span data-o="M|D46"></span>',1)}${T('bilgi','#0f4c81','🗂️','Bilgi ve Veri Girişi','Günlük ücret: <span data-o="'+B+'|F40"></span>')}${T('yillik','#7b3fa0','📈','Yıllık Ortalama Maaş','Toplam: <span data-o="'+Y+'|B16"></span>')}${T('g14','#d9822b','📅','14 Günlük Fark','Brüt: <span data-o="'+ALIAS.S14+'|BP3"></span>')}${T('geri','#c62828','⏪','Geriye Dönük Fark','Net: <span data-o="'+ALIAS.G+'|CB13"></span>')}</div><p class=how style="text-align:center;margin-top:18px">Girdiğiniz bilgiler telefonunuzda saklanır.</p>`;
+ const home=`<a class=bigc href="#maas"><small id=hm2>Bu ayın maaşı</small><div class=bn><span data-o="M|D46"></span></div><div class=bs>Net maaş (BES hariç) · Brüt <b data-o="M|I36"></b> · <span id=hg2></span></div><span class=cta>🧮 Maaş Hesapla ›</span></a><div id=wh class="warn a" hidden></div><h3 style="margin:18px 4px 8px">Diğer işlemler</h3><div class=tiles>${T('bilgi','#0f4c81','🗂️','Bilgi ve Veri Girişi','Günlük ücret: <span data-o="'+B+'|F40"></span>')}${T('yillik','#7b3fa0','📈','Yıllık Ortalama Maaş','Toplam: <span data-o="'+Y+'|B16"></span>')}${T('g14','#d9822b','📅','14 Günlük Fark','Brüt: <span data-o="'+ALIAS.S14+'|BP3"></span>')}${T('geri','#c62828','⏪','Geriye Dönük Fark','Net: <span data-o="'+ALIAS.G+'|CB13"></span>')}</div><p class=how style="text-align:center;margin-top:18px">Girdiğiniz bilgiler telefonunuzda saklanır.</p>`;
  const S=(id,h)=>`<div class=scr id="sc-${id}" hidden>${h}</div>`;
  document.getElementById('m').innerHTML=S('home',home)+S('maas',hero+s1+s2+s3+s4)+S('bilgi',s7)+S('yillik',s5)+S('g14',g14)+S('geri',geri);fill()}
 function fill(){cache={};const ay=document.getElementById('ay'),eng=document.getElementById('eng');
@@ -143,11 +146,18 @@ function fill(){cache={};const ay=document.getElementById('ay'),eng=document.get
  document.querySelectorAll('[data-o]').forEach(e=>{const[s,a]=e.dataset.o.split('|'),S=ALIAS[s]||s;let v=val(S,a);if(e.dataset.neg&&typeof v=='number')v=-v;e.textContent=fmt(v,DB.N[SH[S].nfm[a]]);if(e.dataset.neg)e.classList.toggle('neg',typeof v=='number'&&v<0)});
  document.querySelectorAll('.kv.z').forEach(k=>{const v=k.querySelector('b').textContent;k.hidden=/^-?(₺)?0([,.]0+)?( ₺)?$/.test(v)||v==='';});
  const ck=document.getElementById('auto');if(ck)ck.checked=ST.auto!==false;document.querySelectorAll('[data-show]').forEach(e=>e.style.display=(e.dataset.show=='auto')==(ST.auto!==false)?'':'none');
+ const ay0=curAy(),dv=ST.ov[KD45]!==undefined?ST.ov[KD45]:SH[SN[0]].cells.D45,dm=ST.d45m??10,wr=document.getElementById('wr'),wh=document.getElementById('wh'),t$=n=>fmt(n,'#,##0.00 ₺');
+ if(wr){if(num(dv)!=0&&dm==ay0){wr.className='warn a';wr.hidden=false;wr.innerHTML='⚠️ <b>Bu aya '+t$(num(dv))+' ilave vergi istisnası ekli.</b> Tediye veya ek ödeme yoksa kaldırın.<br><button onclick="clr45()">İlave istisnayı kaldır</button>'}
+  else if(num(dv)!=0){wr.className='warn i';wr.hidden=false;wr.innerHTML='ℹ️ '+(AYLAR[dm-1]||'')+' ayı için girilen '+t$(num(dv))+' ilave istisna bu aya <b>taşınmadı</b>. Gerekirse yeniden ekleyin.<br><button onclick="car45()">Bu aya da ekle</button>'}else wr.hidden=true}
+ if(wh){const a=num(dv)!=0&&dm==ay0;wh.hidden=!a;if(a)wh.innerHTML='⚠️ Bu ayın maaşına <b>'+t$(num(dv))+'</b> ilave vergi istisnası ekli. Gerekmiyorsa Maaş Hesapla ekranından kaldırın.'}
+ const h2=document.getElementById('hm2');if(h2)h2.textContent=(AYLAR[ay0-1]||'')+' ayı maaşın';const g2=document.getElementById('hg2');if(g2)g2.textContent=num(val(ALIAS.M,'D8'))+' gün çalışıldı';
  const ayN=Math.round(num(val(ALIAS.M,'I8')));document.getElementById('hm').textContent=(AYLAR[ayN-1]||'')+' ayı maaşı';document.getElementById('hg').textContent=num(val(ALIAS.M,'D8'))+' gün çalışıldı';
  document.querySelectorAll('.kv.z').forEach(k=>{k.style.display=k.hidden?'none':''})}
 function setv(el){const S=ALIAS[el.dataset.s]||el.dataset.s,k=S+'!'+el.dataset.a,isT=el.inputMode=='text',t=el.value.trim();
- if(isT)ST.ov[k]=t;else if(t==='')ST.ov[k]=null;else{const n=Number(t.replace(',','.'));if(isNaN(n))return;ST.ov[k]=n}save();fill()}
+ if(isT)ST.ov[k]=t;else if(t==='')ST.ov[k]=null;else{const n=Number(t.replace(',','.'));if(isNaN(n))return;ST.ov[k]=n}if(k===KD45)ST.d45m=curAy();save();fill()}
 document.addEventListener('input',e=>{if(e.target.dataset.a&&e.target.tagName=='INPUT')setv(e.target)});document.addEventListener('change',e=>{if(e.target.dataset.a&&e.target.tagName=='SELECT'){const S=ALIAS[e.target.dataset.s]||e.target.dataset.s;ST.ov[S+'!'+e.target.dataset.a]=Number(e.target.value);save();fill()}});
+function clr45(){ST.ov[KD45]=0;ST.d45m=curAy();save();fill()}
+function car45(){ST.d45m=curAy();save();fill()}
 function net2y(){const ay=Math.round(num(val(ALIAS.M,'I8')));if(ay<1||ay>12)return alert('Maaş ayı 1-12 olmalı');ST.ov[ALIAS.Y+'!B'+(3+ay)]=Math.round(num(val(ALIAS.M,'D46'))*100)/100;save();fill();alert(AYLAR[ay-1]+' net maaşı yıllık takibe kaydedildi.')}
 function matA(){if(!confirm('Toplam yıllık vergi matrahı "süregelen matrah" alanına yazılsın mı? (Ayı değiştirmeden önce yapın)'))return;ST.ov[ALIAS.M+'!D41']=Math.round(num(val(ALIAS.M,'I41'))*100)/100;save();fill()}
 const TIT={home:'Maaş Modülü',maas:'Maaş Hesapla',bilgi:'Bilgi ve Veri Girişi',yillik:'Yıllık Ortalama Maaş',g14:'14 Günlük Fark',geri:'Geriye Dönük Fark'};
