@@ -1,5 +1,9 @@
 {
   "appId": "com.dogan.maas",
   "appName": "Maaş Modülü",
-  "webDir": "www"
+  "webDir": "www",
+  "server": {
+    "url": "https://dogan08ay.github.io/maas-apk/",
+    "androidScheme": "https"
+  }
 }

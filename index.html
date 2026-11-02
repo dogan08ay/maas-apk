@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f4c81"><title>Maaş Hesaplama</title>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f4c81"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><title>Maaş Hesaplama</title>
 <style>
 :root{--bg:#eef2f7;--cd:#fff;--tx:#14202e;--mu:#6b7b8c;--pr:#0f4c81;--bd:#e1e8f0;--ok:#0b7a4b;--rd:#c62828;--ac:#f1f6fb;--in:#fffbe6}
 @media(prefers-color-scheme:dark){:root{--bg:#0f151c;--cd:#18212b;--tx:#e8eef4;--mu:#93a3b3;--pr:#5aa2e6;--bd:#2a3644;--ok:#4cc38a;--rd:#ff7b72;--ac:#1f2b38;--in:#2b2a1a}}
@@ -137,4 +137,5 @@ document.addEventListener('input',e=>{if(e.target.dataset.a&&e.target.tagName=='
 function net2y(){const ay=Math.round(num(val(ALIAS.M,'I8')));if(ay<1||ay>12)return alert('Maaş ayı 1-12 olmalı');ST.ov[ALIAS.Y+'!B'+(3+ay)]=Math.round(num(val(ALIAS.M,'D46'))*100)/100;save();fill();alert(AYLAR[ay-1]+' net maaşı yıllık takibe kaydedildi.')}
 function matA(){if(!confirm('Toplam yıllık vergi matrahı "süregelen matrah" alanına yazılsın mı? (Ayı değiştirmeden önce yapın)'))return;ST.ov[ALIAS.M+'!D41']=Math.round(num(val(ALIAS.M,'I41'))*100)/100;save();fill()}
 build();
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script></body></html>
