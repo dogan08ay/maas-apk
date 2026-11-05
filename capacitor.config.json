@@ -1,6 +1,6 @@
 {
   "appId": "com.dogan.maas",
-  "appName": "Maaş Modülü",
+  "appName": "Sağlık İşçisi Maaş Hesaplama",
   "webDir": "www",
   "server": {
     "url": "https://dogan08ay.github.io/maas-apk/",
