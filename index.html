@@ -303,7 +303,7 @@ const BLANK0=[...['A36','B37','C37','D37','E37','F38','B46','B48','C48','D48','E
 // Sürüm 7.5: vergi tutarları (asgari ücret, dilim üst sınırları, engelli indirimi, elle istisna) boş başlar; vergi ORANLARI (0,15 · 0,20 · 0,27 · 0,35) yasal sabit olduğu için hazır gelir
 const BLANK1=['B2','F5','C10','C11','C12','B17','B18','B19','B20'].map(a=>[2,a]),BLANK=[...BLANK0,...BLANK1];
 (()=>{const frz=l=>{for(const[i,a]of l){const v=DB.S[i].cells[a],k=SN[i]+'!'+a;if(v!==undefined&&!(k in ST.ov))ST.ov[k]=v}};
-const kurulu=!!(ST.prof&&ST.prof.done);
+const n0=o=>o&&typeof o=='object'?Object.keys(o).length:0,kurulu=!!((ST.prof&&ST.prof.done)||ST.kabul||n0(ST.ov)||n0(ST.sv)||n0(ST.bor)||n0(ST.arch)||n0(ST.hist)||n0(ST.tis)||n0(ST.gm));
 if(!ST.blk){if(HAD&&kurulu){frz(BLANK)}else{const d=new Date(),m=d.getMonth();ST.ov[SN[0]+'!I8']=m||12;ST.yil=m?d.getFullYear():d.getFullYear()-1;ST.tisY=tisStart(ST.yil)}ST.blk=2;save()}
 else if(ST.blk<2){if(kurulu)frz(BLANK1);ST.blk=2;save()}
 for(const[i,a]of BLANK)DB.S[i].cells[a]=0;DB.S[1].cells.C3='';
