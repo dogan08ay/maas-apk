@@ -306,7 +306,8 @@ const BLANK1=['B2','F5','C10','C11','C12','B17','B18','B19','B20'].map(a=>[2,a])
 const kurulu=!!(ST.prof&&ST.prof.done);
 if(!ST.blk){if(HAD&&kurulu){frz(BLANK)}else{const d=new Date(),m=d.getMonth();ST.ov[SN[0]+'!I8']=m||12;ST.yil=m?d.getFullYear():d.getFullYear()-1;ST.tisY=tisStart(ST.yil)}ST.blk=2;save()}
 else if(ST.blk<2){if(kurulu)frz(BLANK1);ST.blk=2;save()}
-for(const[i,a]of BLANK)DB.S[i].cells[a]=0;DB.S[1].cells.C3=''})();
+for(const[i,a]of BLANK)DB.S[i].cells[a]=0;DB.S[1].cells.C3='';
+if(ST.tisY&&ST.tisY%2==0&&ST.tisY>2025){const o=+ST.tisY,n=o-1,BB=SN[2]+'!';['B39','F34'].forEach(a=>{const r=ST.ov[BB+a];if(typeof r=='string'&&r[0]!='='){const s=r.replace(new RegExp('(\\d{1,2}\\.\\d{1,2}\\.)'+o,'g'),'$1'+n);if(s!==r)ST.ov[BB+a]=s}});ST.tisY=n;save()}})();
 const ALIAS={M:SN[0],S14:SN[1],B:SN[2],A:SN[3],Y:SN[4],G:SN[5]},AYLAR=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 // ---- formül motoru (Excel'deki IF, AND, ROUND, ROUNDDOWN, SUM) ----
 let cache={},GHIDE=false;const AUTOF="=ASGARIISTISNA('VERİ GİRİŞİ VE MAAŞ MODÜLÜ'!I8)",KF5='BİLGİLER!F5';
