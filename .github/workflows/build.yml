@@ -57,7 +57,21 @@ jobs:
               }
           }
           GRADLE
-      - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug
+      - name: Gradle indirme zaman asimini artir
+        run: |
+          f=android/gradle/wrapper/gradle-wrapper.properties
+          if grep -q '^networkTimeout=' "$f"; then sed -i 's/^networkTimeout=.*/networkTimeout=180000/' "$f"; else echo 'networkTimeout=180000' >> "$f"; fi
+          cat "$f"
+      - name: APK derle (en fazla 3 deneme)
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ok=0
+          for i in 1 2 3; do
+            if ./gradlew assembleDebug; then ok=1; break; fi
+            echo "Deneme $i basarisiz, 30 sn sonra tekrar denenecek"; sleep 30
+          done
+          [ "$ok" = 1 ]
       - run: cp android/app/build/outputs/apk/debug/app-debug.apk MaasModulu.apk
       - name: Surum yayinla
         run: gh release create "v$RUN_NO" MaasModulu.apk --title "Surum $RUN_NO" --notes "Maas Modulu APK" --latest
