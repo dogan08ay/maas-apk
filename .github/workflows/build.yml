@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       KS_B64: ${{ secrets.KEYSTORE_B64 }}
+      KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
       RUN_NO: ${{ github.run_number }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -38,6 +39,10 @@ jobs:
       - run: pip install pillow && python icons.py
       - name: Imza ve surum numarasi
         run: |
+          if [ -n "$KS_B64" ] && [ -z "$KS_PASS" ]; then
+            echo "HATA: KEYSTORE_PASSWORD gizli degiskeni eklenmemis. GitHub > Settings > Secrets and variables > Actions > New repository secret ile KEYSTORE_PASSWORD adinda ekleyin."
+            exit 1
+          fi
           if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > android/maas.p12; fi
           cat >> android/app/build.gradle <<'GRADLE'
           android {
@@ -50,9 +55,9 @@ jobs:
                       maas {
                           storeFile file('../maas.p12')
                           storeType 'pkcs12'
-                          storePassword 'maasmodulu2026'
+                          storePassword System.getenv('KS_PASS')
                           keyAlias 'maas'
-                          keyPassword 'maasmodulu2026'
+                          keyPassword System.getenv('KS_PASS')
                       }
                   }
                   buildTypes {
