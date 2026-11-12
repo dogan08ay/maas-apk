@@ -1,8 +1,9 @@
-const C='maas-v36',F=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
+const C='maas-v37',F=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>Promise.all(F.map(u=>c.add(u).catch(()=>{})))))});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
  const q=e.request;
+ if(q.method==='GET'&&q.url.startsWith(self.location.origin)&&q.url.includes('/tis/')){e.respondWith(caches.open(C).then(async c=>(await c.match(q))||fetch(q).then(r=>{if(r&&r.ok)c.put(q,r.clone());return r})));return}
  if(q.method!=='GET'||q.url.includes('?v=')||!q.url.startsWith(self.location.origin))return;
  e.respondWith((async()=>{
   const c=await caches.open(C);
