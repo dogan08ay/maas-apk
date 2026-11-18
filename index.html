@@ -465,6 +465,10 @@ body{background:linear-gradient(180deg,var(--bg2) 0,var(--bg) 320px) no-repeat,v
 .hfoot .hfm,.nt a[href^="mailto"],#mdl a[href^="mailto"],.gd a[href^="mailto"]{display:inline!important;word-break:normal!important;overflow-wrap:normal!important;white-space:nowrap!important}
 .hfoot .hfl{margin-top:1px}
 #mdl .nt,.gd .nt{overflow-wrap:break-word;hyphens:manual}
+
+.asAcc{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin:18px 0 8px;border:1px solid var(--bd);border-left:5px solid #e8710a;border-radius:14px;background:var(--cd);color:var(--tx);padding:12px;font:700 16.5px system-ui,sans-serif;text-align:left}
+.asAcc em{font-style:normal;font:600 13px system-ui,sans-serif;color:var(--pr);background:var(--ac);border-radius:12px;padding:4px 10px;flex:none}
+.asAcc+div{margin-bottom:4px}
 </style></head><body>
 <div class=top><button id=bk onclick="history.back()" hidden>‹</button><h1 id=tt>Sağlık İşçisi Maaş Hesaplama</h1><button class=mn onclick="drawer(1)" aria-label="Menü">☰</button></div>
 <div id=ub hidden></div><div id=ub2 hidden></div>
@@ -578,12 +582,12 @@ function odHak(id,on){ST.prof=ST.prof||{};if(!ST.prof.hak||typeof ST.prof.hak!='
 function arsivRender(){const el=document.getElementById('arsivbox');if(!el)return;const P=ST.pk&&ST.pk.veri,A=(P&&Array.isArray(P.arsiv)&&P.arsiv)||[];if(!A.length){el.innerHTML='<div class=card><h2>📚 TİS Arşivi</h2><p class=sub>Toplu iş sözleşmesi metinleri veri paketiyle gelir. Henüz arşiv kaydı yok; internete bağlanıp uygulamayı yeniden açın.</p></div>';return}
  const mb=n=>n>0?(n/1048576).toFixed(1).replace('.',',')+' MB':'';
  el.innerHTML='<div class=card><h2>📚 TİS Arşivi</h2><p class=sub>İmzalanan toplu iş sözleşmelerinin metinleri. Dosyayı görüntüleyebilir veya telefonuna indirebilirsin. Dosya, yayıncının imzalı paketindeki sağlama değeriyle doğrulanır.</p>'+A.map((a,ix)=>[a,ix]).sort((x,y)=>String(y[0].yururlukBas).localeCompare(String(x[0].yururlukBas))).map(([a,ix])=>'<div class=odr><b>'+esc(a.ad)+'</b>'+(a.taraflar?'<small style="display:block;color:var(--mu);font-weight:600;margin:2px 0 6px">'+esc(a.taraflar)+'</small>':'')+'<div class=kv><span>Yürürlük</span><b>'+TRD(a.yururlukBas)+' – '+TRD(a.yururlukBit)+'</b></div>'+(a.imza?'<div class=kv><span>İmza tarihi</span><b>'+TRD(a.imza)+'</b></div>':'')+(a.madde?'<div class=kv style="flex-direction:column;gap:2px"><span>Kapsam</span><b style="white-space:normal;overflow-wrap:anywhere;font-weight:700">'+esc(a.madde)+'</b></div>':'')+(a.not?'<p class=ht>'+esc(a.not)+'</p>':'')+(a.dosya?'<div class=g2 style="margin-top:8px"><button class=b onclick="arsOpen('+ix+',0)">👁️ Görüntüle</button><button class="b s" onclick="arsOpen('+ix+',1)">⬇️ İndir'+(a.boyut?' ('+mb(a.boyut)+')':'')+'</button></div>':'<p class=ht>Bu sözleşmenin dosyası henüz eklenmedi.</p>')+'</div>').join('')+'</div>'}
-async function arsOpen(ix,dl){const P=ST.pk&&ST.pk.veri,a=P&&P.arsiv&&P.arsiv[ix];if(!a||!a.dosya)return;toast('Dosya hazırlanıyor…');
- try{const url=/^https:\/\//.test(a.dosya)?a.dosya:new URL(a.dosya,location.href).href,r=await fetch(url);if(!r.ok)throw new Error('Dosya bulunamadı ('+r.status+')');const buf=await r.arrayBuffer();
+async function arsOpen(ix,dl,pg){const P=ST.pk&&ST.pk.veri,a=P&&P.arsiv&&P.arsiv[ix];if(!a||!a.dosya)return;toast('Dosya hazırlanıyor…');
+ try{const r=await arsGet(a);const buf=await r.arrayBuffer();
   if(a.sha256){const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buf))].map(b=>b.toString(16).padStart(2,'0')).join('');if(h!==a.sha256)throw new Error('Dosya doğrulanamadı; açılmadı. Uygulamayı güncelleyip tekrar deneyin.')}
   const u=URL.createObjectURL(new Blob([buf],{type:'application/pdf'}));
-  if(dl){const l=document.createElement('a');l.href=u;l.download=a.dosyaAdi||String(a.dosya).split('/').pop()||'toplu-is-sozlesmesi.pdf';document.body.appendChild(l);l.click();l.remove();toast('✓ Dosya indirildi')}else{if(!window.open(u,'_blank'))location.href=u}
-  setTimeout(()=>URL.revokeObjectURL(u),120000)}catch(e){toast('⚠️ '+(e&&e.message||e))}}
+  if(dl){const l=document.createElement('a');l.href=u;l.download=a.dosyaAdi||String(a.dosya).split('/').pop()||'toplu-is-sozlesmesi.pdf';document.body.appendChild(l);l.click();l.remove();toast('✓ Dosya indirildi')}else{{const uu=u+(pg?'#page='+pg:'');if(!window.open(uu,'_blank'))location.href=uu}}
+  setTimeout(()=>URL.revokeObjectURL(u),120000)}catch(e){arsErr(e)}}
 // ---- Yıllık izin (TİS Madde 30/a): hak, işe giriş tarihinden itibaren 1 yıl dolunca doğar ve her yıldönümünde yenilenir
 const izToday=()=>{const t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')};
 // Kıdem başlangıcı: işe giriş tarihi; 696 sayılı KHK ile geçenlerde TİS Madde 58’deki tarih
@@ -1374,14 +1378,17 @@ async function asShare(id){const e=asGet(id),n=asDon();const t='💬 '+e.q+'\n\n
  try{const CP=window.Capacitor,C=CP&&CP.Plugins;if(C&&C.Share&&C.Share.share){await C.Share.share({title:e.q,text:t,dialogTitle:'Paylaş'});return}}catch(x){if(x&&/cancel/i.test(String(x.message||x)))return}
  if(navigator.share){try{await navigator.share({title:e.q,text:t})}catch(x){}return}
  if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>toast('Cevap panoya kopyalandı'));else toast('Paylaşım desteklenmiyor')}
-/* Sözleşmeyi arşivden açar. Dosya bulunamazsa sıradaki adayı dener; hiçbiri olmazsa Arşiv sekmesine götürür. */
-async function asTis(pg){const P=ST.pk&&ST.pk.veri,A=(P&&Array.isArray(P.arsiv)&&P.arsiv)||[];
- const yil=String((AS_C.donemBas&&AS_C.donemBas[0]||'').slice(0,4)),sk=a=>(String(a.dosya||'')+' '+String(a.dosyaAdi||'')+' '+String(a.baslik||'')+' '+String(a.ad||'')).indexOf(yil)>=0?1:0;
- const L=A.map((a,i)=>[a,i]).filter(x=>x[0].dosya).sort((x,y)=>sk(y[0])-sk(x[0])||y[1]-x[1]);
- if(L.length){toast('Sözleşme açılıyor…');for(const [a] of L){try{const url=/^https:\/\//.test(a.dosya)?a.dosya:new URL(a.dosya,location.href).href,r=await fetch(url);if(!r.ok)continue;const buf=await r.arrayBuffer();
-   if(a.sha256){const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buf))].map(b=>b.toString(16).padStart(2,'0')).join('');if(h!==a.sha256)continue}
-   const u=URL.createObjectURL(new Blob([buf],{type:'application/pdf'}))+(pg?'#page='+pg:'');if(!window.open(u,'_blank'))location.href=u;setTimeout(()=>URL.revokeObjectURL(u),120000);return}catch(e){}}}
- toast('Sözleşmeyi TİS Arşivi sekmesinden açabilirsin');window._keepTab=1;ST.sub=ST.sub||{};ST.sub.bilgi=6;save();build();if(location.hash!='#bilgi')location.hash='bilgi';else route()}
+/* Sözleşmeyi arşivden açar (arsOpen ile aynı yolu kullanır). */
+function asTis(pg){const P=ST.pk&&ST.pk.veri,A=(P&&Array.isArray(P.arsiv)&&P.arsiv)||[],t=izToday();let ix=-1;
+ A.forEach((a,i)=>{if(!a.dosya)return;const inR=String(a.yururlukBas||'')<=t&&t<=String(a.yururlukBit||'9999');if(ix<0||inR)ix=i});
+ if(ix>=0){arsOpen(ix,0,pg);return}
+ toast('Sözleşme arşivde bulunamadı; veri paketi yüklenince tekrar dene');window._keepTab=1;ST.sub=ST.sub||{};ST.sub.bilgi=6;save();build();if(location.hash!='#bilgi')location.hash='bilgi';else route()}
+/* PDF'i birkaç olası adreste arar: yazılı yol, tis/ klasörü, ana klasör */
+async function arsGet(a){const nm=a.dosyaAdi||String(a.dosya).split('/').pop(),L=[],add=u=>{try{const h=/^https:\/\//.test(u)?u:new URL(u,location.href).href;if(L.indexOf(h)<0)L.push(h)}catch(e){}};
+ add(a.dosya);if(!/^https:\/\//.test(a.dosya)){add('tis/'+nm);add(nm)}
+ let last=0;for(const u of L){try{const r=await fetch(u);if(r.ok)return r;last=last||r.status}catch(e){last=last||'ağ'}}
+ const e=new Error('Dosya bulunamadı ('+last+')');e.urls=L;e.nm=nm;throw e}
+function arsErr(e){if(e&&e.urls){modal('📄 Sözleşme dosyası bulunamadı','<p class=nt>Uygulama PDF’i şu adreslerde aradı ama bulamadı:</p><p class=nt style="word-break:break-all;font-size:12.5px">'+e.urls.map(esc).join('<br>')+'</p><p class=nt><b>Ne yapmalı?</b> <b>'+esc(e.nm)+'</b> dosyasını GitHub deposuna, <b>tis</b> klasörüne aynı adla yükleyin. Yükledikten 1-2 dakika sonra uygulamayı kapatıp yeniden açın.</p>')}else toast('⚠️ '+(e&&e.message||e))}
 /* ---- görünümler ---- */
 function asQList(L,open1){return L.map((e,i)=>asCard(e,open1&&i==0)).join('')}
 function asPopBtns(a){return '<div class=asPop>'+a.map(p=>'<button onclick="asOne(\''+(asFind(p[1])||{}).i+'\')"><span>❓</span>'+esc(p[0])+'<i>›</i></button>').join('')+'</div>'}
@@ -1389,9 +1396,10 @@ function asHome(){const f=asFavs().map(asGet).filter(Boolean),rec=ST.asRec||[];l
  if(f.length)h+='<h3 class=asH>⭐ Favorilerim</h3>'+asQList(f,false);
  if(rec.length)h+='<div class=asHrow><h3 class=asH>🕘 Son aramalar</h3><button class=asClr onclick="asRecClr()">Temizle</button></div><div class=asChips>'+rec.map(r=>'<button onclick="asSet(this.dataset.q)" data-q="'+esc(r)+'">'+esc(r)+'</button>').join('')+'</div>';
  h+='<h3 class=asH>Hangi konuda bilgi almak istiyorsun?</h3><div class=asTiles>'+AS_CAT.map((c,i)=>{const k=ASD.filter(e=>e.c==c.k).length;return '<button class="asTile'+(i==4?' w':'')+'" style="--c:'+c.c+';--cb:'+c.cb+'" onclick="asCat(\''+c.k+'\')"><span class=ic>'+c.ic+'</span><b>'+c.t+'</b><small>'+k+' soru</small></button>'}).join('')+'</div>';
- h+='<h3 class=asH>🔥 Popüler sorular</h3>'+asPopBtns(AS_POP);
- h+='<h3 class=asH>🧮 Hak hesaplayıcı</h3><p class=asSub>Kendi verinle brüt ve net tutarı gör. Günlük ücretin otomatik gelir.</p><div class=asTiles>'+[['gece','🌙','Gece çalışması','#3949ab'],['mesai','⏱️','Fazla mesai','#e8710a'],['icap','📟','İcap ve nöbet','#00897b'],['yemek','🍽️','Yemek yardımı','#c62828'],['tatil','🎌','Resmî tatil','#d32f2f'],['izin','🌴','Yıllık izin','#1976d2'],['tablo','📋','Tüm yardımlar tablosu','#0f8a5f']].map((c,i,r)=>'<button class="asTile asTc'+(i==r.length-1?' w':'')+'" style="--c:'+c[3]+';--cb:'+c[3]+'24" onclick="asCalc(\''+c[0]+'\')"><span class=ic>'+c[1]+'</span><b>'+c[2]+'</b></button>').join('')+'</div>';
+ h+='<button class=asAcc onclick="asPopTgl(this)" aria-expanded=false><span>🔥 Popüler sorular</span><em>Aç ▾</em></button><div id=asPopL hidden>'+asPopBtns(AS_POP)+'</div>';
+ h+='<h3 class=asH>🧮 Hak hesaplayıcı</h3><p class=asSub>Maaşında merak ettiğin her kalemi, girdiğin değerle anında hesapla. Sonuç, güncel vergi diliminize göre net tutar olarak da görünür. Örneğin 1 saat gece çalışmasının net karşılığını hemen görebilirsin. Günlük ücretin otomatik gelir.</p><div class=asTiles>'+[['gece','🌙','Gece çalışması','#3949ab'],['mesai','⏱️','Fazla mesai','#e8710a'],['icap','📟','İcap ve nöbet','#00897b'],['yemek','🍽️','Yemek yardımı','#c62828'],['tatil','🎌','Resmî tatil','#d32f2f'],['izin','🌴','Yıllık izin','#1976d2'],['tablo','📋','Tüm yardımlar tablosu','#0f8a5f']].map((c,i,r)=>'<button class="asTile asTc'+(i==r.length-1?' w':'')+'" style="--c:'+c[3]+';--cb:'+c[3]+'24" onclick="asCalc(\''+c[0]+'\')"><span class=ic>'+c[1]+'</span><b>'+c[2]+'</b></button>').join('')+'</div>';
  return h}
+function asPopTgl(b){const l=document.getElementById('asPopL');if(!l)return;l.hidden=!l.hidden;b.setAttribute('aria-expanded',String(!l.hidden));b.querySelector('em').textContent=l.hidden?'Aç ▾':'Kapat ▴'}
 function asCatView(){const c=asCatOf(AS.cat),L=ASD.filter(e=>e.c==AS.cat);return '<button class=asBack onclick="asHomeGo()">‹ Konulara dön</button><h3 class=asH style="color:'+c.c+'">'+c.ic+' '+c.t+' <small>('+L.length+')</small></h3>'+asQList(L,false)}
 function asOneView(){const e=asGet(AS.id);if(!e)return asHome();const rel=asSearch(e.q).filter(x=>x.i!==e.i).slice(0,4);return '<button class=asBack onclick="asHomeGo()">‹ Geri</button>'+asCard(e,true)+(rel.length?'<h3 class=asH>İlgili sorular</h3>'+asQList(rel,false):'')}
 function asSearchView(){const q=AS.q.trim(),L=asSearch(q);if(!L.length){const sub='Sözleşme asistanına soru: '+q;return '<div class=asNo><b>🔎 Sonuç bulunamadı</b><p>“'+esc(q)+'” için sözleşmede eşleşen cevap yok. Farklı sözcüklerle dene (ör. “gece mesaisi”, “yemek parası”, “yıllık izin”) ya da bize sor.</p><a class="asB asBp" href="mailto:'+SUPPORT_MAIL+'?subject='+encodeURIComponent(sub)+'">✉️ Bu soruyu bize gönder</a></div><h3 class=asH>🔥 Popüler sorular</h3>'+asPopBtns(AS_POP.slice(0,5))}
