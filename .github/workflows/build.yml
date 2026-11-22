@@ -26,10 +26,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: mkdir -p www && cp index.html www/index.html
+      - name: Web dosyalarini www klasorune kopyala
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          for f in sahne.webp icon-192.png icon-512.png manifest.json; do [ -f "$f" ] && cp "$f" www/ || true; done
       - run: npm install
       - run: npx cap add android
       - run: npx cap sync android
+      - name: Bildirim izni (Android 13 ve uzeri)
+        run: |
+          f=android/app/src/main/AndroidManifest.xml
+          grep -q 'POST_NOTIFICATIONS' "$f" || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' "$f"
+          grep -n 'POST_NOTIFICATIONS' "$f"
       - name: Android bulut yedeklemesini kapat (yeniden kurulumda eski veri gelmesin)
         run: |
           f=android/app/src/main/AndroidManifest.xml
