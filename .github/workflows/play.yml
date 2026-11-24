@@ -1,0 +1,107 @@
+name: Play AAB Olustur
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      KS_B64: ${{ secrets.KEYSTORE_B64 }}
+      KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+      RUN_NO: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Play ayar dosyalarini etkinlestir
+        run: |
+          cp package.play.json package.json
+          cp capacitor.play.config.json capacitor.config.json
+      - name: Web dosyalarini www klasorune gom
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          for f in manifest.json sahne.webp icon-192.png icon-512.png paket.json asistan.json gizlilik.html kullanim-sartlari.html; do [ -f "$f" ] && cp "$f" www/ || true; done
+          for d in tis pdfjs; do [ -d "$d" ] && cp -r "$d" www/ || true; done
+          sed -i "s#const PLAY_URL='';#const PLAY_URL='https://play.google.com/store/apps/details?id=com.dogan.maas';#g" www/index.html
+          test "$(grep -c 'play.google.com/store/apps/details' www/index.html)" -ge 1
+          du -sh www
+      - run: npm install
+      - run: npx cap add android
+      - run: npx cap sync android
+      - name: Hedef SDK degerlerini goster
+        run: grep -nE "minSdk|compileSdk|targetSdk" android/variables.gradle
+      - name: Bildirim izni (Android 13 ve uzeri)
+        run: |
+          f=android/app/src/main/AndroidManifest.xml
+          grep -q 'POST_NOTIFICATIONS' "$f" || sed -i 's#</manifest>#    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' "$f"
+          grep -n 'POST_NOTIFICATIONS' "$f"
+      - name: Android bulut yedeklemesini kapat
+        run: |
+          f=android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:allowBackup="true"/android:allowBackup="false"/' "$f"
+          grep -q 'android:allowBackup="false"' "$f" || sed -i '0,/<application/s//<application android:allowBackup="false"/' "$f"
+          grep -n 'allowBackup' "$f"
+      - run: pip install pillow && python icons.py
+      - name: Release imzasi ve surum numarasi
+        run: |
+          if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ]; then
+            echo "HATA: KEYSTORE_B64 ve KEYSTORE_PASSWORD gizli degiskenleri gerekli. Imzasiz AAB Play'e yuklenemez."
+            exit 1
+          fi
+          echo "$KS_B64" | base64 -d > android/maas.p12
+          cat >> android/app/build.gradle <<'GRADLE'
+          android {
+              defaultConfig {
+                  versionCode = 1000 + Integer.parseInt(System.getenv('RUN_NO') ?: '1')
+                  versionName = "3." + (System.getenv('RUN_NO') ?: '1')
+              }
+              signingConfigs {
+                  maas {
+                      storeFile = file('../maas.p12')
+                      storeType = 'pkcs12'
+                      storePassword = System.getenv('KS_PASS')
+                      keyAlias = 'maas'
+                      keyPassword = System.getenv('KS_PASS')
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig = signingConfigs.maas
+                  }
+              }
+          }
+          GRADLE
+      - name: Gradle indirme zaman asimini artir
+        run: |
+          f=android/gradle/wrapper/gradle-wrapper.properties
+          if grep -q '^networkTimeout=' "$f"; then sed -i 's/^networkTimeout=.*/networkTimeout=180000/' "$f"; else echo 'networkTimeout=180000' >> "$f"; fi
+      - name: AAB derle (en fazla 3 deneme)
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ok=0
+          for i in 1 2 3; do
+            if ./gradlew bundleRelease; then ok=1; break; fi
+            echo "Deneme $i basarisiz, 30 sn sonra tekrar denenecek"; sleep 30
+          done
+          [ "$ok" = 1 ]
+      - name: Birlesik izinleri goster (kontrol icin)
+        run: |
+          for f in $(find android/app/build -name AndroidManifest.xml -path '*merged_manifests*' | head -3); do
+            echo "== $f"; grep -o 'android:name="android.permission[^"]*"' "$f" | sort -u
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MaasModulu-Play-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error

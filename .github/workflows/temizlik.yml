@@ -1,0 +1,36 @@
+name: Eski Calismalari Temizle
+on:
+  workflow_dispatch:
+    inputs:
+      run_sayisi:
+        description: 'En yeni kac derleme calismasi kalsin'
+        default: '5'
+      surum_sayisi:
+        description: 'En yeni kac surum (APK) kalsin'
+        default: '3'
+permissions:
+  actions: write
+  contents: write
+jobs:
+  temizle:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      KEEP_RUN: ${{ inputs.run_sayisi }}
+      KEEP_REL: ${{ inputs.surum_sayisi }}
+    steps:
+      - name: Eski derleme calismalarini sil
+        run: |
+          echo "En yeni $KEEP_RUN tamamlanmis calisma korunacak"
+          gh run list --repo "$REPO" --limit 1000 --json databaseId,status --jq '.[] | select(.status=="completed") | .databaseId' | tail -n +$((KEEP_RUN + 1)) | while read -r id; do
+            echo "Siliniyor: calisma $id"
+            gh run delete "$id" --repo "$REPO" || true
+          done
+      - name: Eski surumleri sil
+        run: |
+          echo "En yeni $KEEP_REL surum korunacak"
+          gh release list --repo "$REPO" --limit 300 --json tagName --jq '.[].tagName' | tail -n +$((KEEP_REL + 1)) | while read -r tag; do
+            echo "Siliniyor: surum $tag"
+            gh release delete "$tag" --repo "$REPO" --cleanup-tag --yes || true
+          done
