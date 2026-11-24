@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
     inputs:
       run_sayisi:
-        description: 'En yeni kac derleme calismasi kalsin'
-        default: '5'
+        description: 'Her is akisi icin en yeni kac calisma kalsin'
+        default: '3'
       surum_sayisi:
         description: 'En yeni kac surum (APK) kalsin'
         default: '3'
@@ -20,12 +20,14 @@ jobs:
       KEEP_RUN: ${{ inputs.run_sayisi }}
       KEEP_REL: ${{ inputs.surum_sayisi }}
     steps:
-      - name: Eski derleme calismalarini sil
+      - name: Eski derleme calismalarini sil (her is akisi icin ayri)
         run: |
-          echo "En yeni $KEEP_RUN tamamlanmis calisma korunacak"
-          gh run list --repo "$REPO" --limit 1000 --json databaseId,status --jq '.[] | select(.status=="completed") | .databaseId' | tail -n +$((KEEP_RUN + 1)) | while read -r id; do
-            echo "Siliniyor: calisma $id"
-            gh run delete "$id" --repo "$REPO" || true
+          gh workflow list --repo "$REPO" --all --json id --jq '.[].id' | while read -r wf; do
+            echo "Is akisi $wf: en yeni $KEEP_RUN tamamlanmis calisma korunacak"
+            gh run list --repo "$REPO" --workflow "$wf" --limit 1000 --json databaseId,status --jq '.[] | select(.status=="completed") | .databaseId' | tail -n +$((KEEP_RUN + 1)) | while read -r id; do
+              echo "Siliniyor: calisma $id"
+              gh run delete "$id" --repo "$REPO" || true
+            done
           done
       - name: Eski surumleri sil
         run: |
