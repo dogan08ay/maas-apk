@@ -7,8 +7,8 @@
   },
   "plugins": {
     "SystemBars": {
-      "insetsHandling": "css",
-      "style": "DEFAULT"
+      "insetsHandling": "native",
+      "style": "DARK"
     }
   }
 }
