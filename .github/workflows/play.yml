@@ -51,6 +51,29 @@ jobs:
           grep -q 'xmlns:tools' "$f" || sed -i '0,/<manifest /s//<manifest xmlns:tools="http:\/\/schemas.android.com\/tools" /' "$f"
           sed -i 's#</manifest>#    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />\n</manifest>#' "$f"
           grep -n 'SCHEDULE_EXACT_ALARM\|xmlns:tools' "$f"
+      - name: Sayfa cekilince esneme efektini kapat (MainActivity)
+        run: |
+          f=$(find android/app/src/main/java -name MainActivity.java | head -1)
+          if [ -z "$f" ]; then echo "UYARI: MainActivity.java bulunamadi, esneme efekti kapatilmadi"; exit 0; fi
+          pkg=$(grep -m1 '^package ' "$f")
+          cat > "$f" <<JAVA
+          $pkg
+
+          import android.view.View;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onStart() {
+                  super.onStart();
+                  try {
+                      getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
+                  } catch (Exception e) {
+                  }
+              }
+          }
+          JAVA
+          cat "$f"
       - name: Sistem cubuklari arkasini koyu mavi yap (durum ve gezinme cubugu)
         run: |
           f=android/app/src/main/res/values/styles.xml
