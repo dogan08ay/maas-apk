@@ -51,6 +51,13 @@ jobs:
           grep -q 'xmlns:tools' "$f" || sed -i '0,/<manifest /s//<manifest xmlns:tools="http:\/\/schemas.android.com\/tools" /' "$f"
           sed -i 's#</manifest>#    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />\n</manifest>#' "$f"
           grep -n 'SCHEDULE_EXACT_ALARM\|xmlns:tools' "$f"
+      - name: Sistem cubuklari arkasini koyu mavi yap (durum ve gezinme cubugu)
+        run: |
+          f=android/app/src/main/res/values/styles.xml
+          if grep -q 'windowNoTitle' "$f"; then
+            sed -i 's|<item name="windowNoTitle">true</item>|<item name="windowNoTitle">true</item>\n        <item name="android:windowBackground">\#0b3a66</item>|' "$f"
+          fi
+          grep -n 'windowBackground' "$f" || echo "UYARI: styles.xml beklenen bicimde degil, arka plan rengi eklenmedi"
       - name: Android bulut yedeklemesini kapat
         run: |
           f=android/app/src/main/AndroidManifest.xml
